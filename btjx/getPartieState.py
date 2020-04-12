@@ -41,7 +41,7 @@ def getPartieStateInDB(partieID):
     try:
         return (result['Item']['updatedAt'], result['Item']['turn'], result['Item']['turnUpdatedAt'], result['Item']['gameName'])
     except Exception:
-        return (0, "", 0)
+        return (0, "", 0, "")
 
 
 def updatePartieState(partieID, excludeUpdateChatIDs, previousTurn):
