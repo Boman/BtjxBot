@@ -18,15 +18,14 @@ from telegram import Update, Bot, ParseMode
 
 
 def getPartieState(partieID, excludeUpdateChatIDs):
-    partieUpdate, turn, turnUpdate = getPartieStateInDB(partieID)
-    gameName = ""
+    partieUpdate, turn, turnUpdate, gameName = getPartieStateInDB(partieID)
     if partieUpdate < int((time.time() - 60) * 1000):
         partieUpdate, turn, turnUpdate, gameName = updatePartieState(partieID, excludeUpdateChatIDs, turn)
 
     since = humanize.naturaltime(datetime.fromtimestamp(float(turnUpdate) / 1000.0))
     updatedTime = humanize.naturaltime(datetime.fromtimestamp(float(partieUpdate) / 1000.0))
-    return "It's {}'s turn in partie <a href=\"http://www.boiteajeux.net/jeux/agr/partie.php?id={}\">{}</a> since {} (updated {})" \
-        .format(turn, partieID, gameName, since, updatedTime)
+    return "<a href=\"http://www.boiteajeux.net/jeux/agr/partie.php?id={}\">{}</a>: {}'s turn, since {} (updated {})" \
+        .format(partieID, gameName, turn, since, updatedTime)
 
 
 def getPartieStateInDB(partieID):
@@ -40,7 +39,7 @@ def getPartieStateInDB(partieID):
     )
 
     try:
-        return (result['Item']['updatedAt'], result['Item']['turn'], result['Item']['turnUpdatedAt'])
+        return (result['Item']['updatedAt'], result['Item']['turn'], result['Item']['turnUpdatedAt'], result['Item']['gameName'])
     except Exception:
         return (0, "", 0)
 
@@ -61,8 +60,10 @@ def updatePartieState(partieID, excludeUpdateChatIDs, previousTurn):
             },
             ExpressionAttributeValues={
                 ':updatedAt': timestamp,
+                ':gameName': gameName,
             },
-            UpdateExpression='SET updatedAt = :updatedAt',
+            UpdateExpression='SET updatedAt = :updatedAt, '
+                             'gameName = :gameName',
             ReturnValues='ALL_OLD',
         )
         try:
@@ -77,10 +78,12 @@ def updatePartieState(partieID, excludeUpdateChatIDs, previousTurn):
             },
             ExpressionAttributeValues={
                 ':turn': turn,
+                ':gameName': gameName,
                 ':updatedAt': timestamp,
                 ':turnUpdatedAt': timestamp,
             },
             UpdateExpression='SET turn = :turn, '
+                             'gameName = :gameName, '
                              'updatedAt = :updatedAt, '
                              'turnUpdatedAt = :turnUpdatedAt',
             ReturnValues='ALL_OLD',
@@ -105,8 +108,8 @@ def informPlayersAboutTurn(partieID, turn, previousTurn, excludeUpdateChatIDs, g
             names = getNamesForChatUserID(chatUserID)
             if turn in names:
                 since = humanize.naturaltime(datetime.fromtimestamp(float(turnUpdatedAt) / 1000.0))
-                text = "It's {}'s turn in partie <a href=\"http://www.boiteajeux.net/jeux/agr/partie.php?id={}\">{}</a>. Previously it was {}'s turn since {}.".format(
-                    turn, partieID, gameName, previousTurn, since)
+                text = "<a href=\"http://www.boiteajeux.net/jeux/agr/partie.php?id={}\">{}</a>: {}'s turn. Previously {}'s turn, since {}.".format(
+                    partieID, gameName, turn, previousTurn, since)
                 message = bot.send_message(chat_id=chatUserID.split(':')[0], text=text, parse_mode=ParseMode.HTML,
                                            disable_web_page_preview=True)
     return
@@ -116,7 +119,7 @@ def checkTurns():
     parties = getPartiesToUpdateInDB()
     for partie in parties:
         partieID = partie['id']
-        partieUpdate, turn, turnUpdate = getPartieStateInDB(partieID)
+        partieUpdate, turn, turnUpdate, gameName = getPartieStateInDB(partieID)
         if partieUpdate < int((time.time() - 60) * 1000):
             partieUpdate, turn, turnUpdate, gameName = updatePartieState(partieID, [], turn)
     return

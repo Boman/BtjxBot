@@ -50,7 +50,7 @@ def removeNameInDB(playerName, chatID, userID):
         },
         UpdateExpression='DELETE playerNames :playerName '
                          'SET updatedAt = :updatedAt',
-        ReturnValues='ALL_OLD',
+        ReturnValues='ALL_NEW',
     )
 
     try:
