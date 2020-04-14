@@ -2,6 +2,7 @@ import os
 import json
 import sys
 import time
+import traceback
 from datetime import datetime
 
 from btjx import decimalencoder
@@ -171,12 +172,18 @@ def getUsersByPartieInDB(partieID):
 
 
 def getPartieResponse(partieID):
-    partieURL = 'http://www.boiteajeux.net/jeux/agr/partie.php?id={}'.format(partieID)
-    getPage = requests.get(partieURL)
-    getPage.raise_for_status()  # if error it will stop the program
-    site = bs4.BeautifulSoup(getPage.text, 'html.parser')
-    clInfo = site.select('.clInfo')
-    turn = clInfo[0].get_text().split("'s")[1].strip()
-    dvEnteteInfo = site.select('#dvEnteteInfo')
-    gameName = dvEnteteInfo[0].get_text(strip=True).split("\"")[1]
+    turn = "nobody"
+    gameName = "no Name"
+    try:
+        partieURL = 'http://www.boiteajeux.net/jeux/agr/partie.php?id={}'.format(partieID)
+        getPage = requests.get(partieURL)
+        getPage.raise_for_status()  # if error it will stop the program
+        site = bs4.BeautifulSoup(getPage.text, 'html.parser')
+        clInfo = site.select('.clInfo')
+        turn = clInfo[0].get_text().split("'s")[1].strip()
+        dvEnteteInfo = site.select('#dvEnteteInfo')
+        gameName = dvEnteteInfo[0].get_text(strip=True).split("\"")[1]
+    except Exception as ex:
+        print(partieID)
+        print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
     return turn, gameName

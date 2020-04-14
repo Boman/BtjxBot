@@ -59,7 +59,9 @@ def parties(update, context):
     chatID = update.message.chat_id
     userID = update.message.from_user.id
     try:
-        update.message.reply_text(getParties.getParties(chatID, userID), parse_mode=ParseMode.HTML,
+        text = getParties.getParties(chatID, userID)
+        print(text)
+        update.message.reply_text(text, parse_mode=ParseMode.HTML,
                                   disable_web_page_preview=True)
     except (IndexError, ValueError):
         update.message.reply_text('Usage: /parties')
@@ -120,24 +122,10 @@ dp.add_handler(CommandHandler("unwatchPartie", unwatchPartie,
 
 
 def btjxbot_handler(event, context):
-    try:
-        dispatcher.process_update(
-            Update.de_json(json.loads(event["body"]), bot)
-        )
-
-    except Exception as e:
-        print(e)
-        return {"statusCode": 500}
-
+    dispatcher.process_update(Update.de_json(json.loads(event["body"]), bot))
     return {"statusCode": 200}
 
 
 def cron_handler(event, context):
-    try:
-        getPartieState.checkTurns()
-
-    except Exception as e:
-        print(e)
-        return {"statusCode": 500}
-
+    getPartieState.checkTurns()
     return {"statusCode": 200}
